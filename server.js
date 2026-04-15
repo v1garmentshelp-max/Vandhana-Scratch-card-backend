@@ -5,7 +5,17 @@ require("dotenv").config();
 
 const app = express();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "https://vandhana-scratch-card-website.vercel.app",
+      "https://vandhana-scratch-card-website-m2ba.vercel.app"
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true
+  })
+);
+
 app.use(express.json());
 
 const isValidName = (value) => /^[A-Za-z ]{3,}$/.test((value || "").trim());
@@ -14,7 +24,19 @@ const isValidGender = (value) => ["Male", "Female", "Other"].includes(value);
 const isValidMaritalStatus = (value) => ["Single", "Married"].includes(value);
 
 app.get("/", (req, res) => {
-  res.json({ message: "Vandhana backend running" });
+  res.status(200).json({ message: "Vandhana backend running" });
+});
+
+app.get("/api/health", async (req, res) => {
+  try {
+    await pool.query("SELECT 1");
+    return res.status(200).json({ message: "Database connected successfully" });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Database connection failed",
+      error: error.message
+    });
+  }
 });
 
 app.post("/api/customers", async (req, res) => {
@@ -57,11 +79,11 @@ app.post("/api/customers", async (req, res) => {
 
     if (maritalStatus === "Married") {
       if (!isValidName(spouseName)) {
-        return res.status(400).json({ message: "Invalid wife name" });
+        return res.status(400).json({ message: "Invalid spouse name" });
       }
 
       if (!spouseDob) {
-        return res.status(400).json({ message: "Wife date of birth is required" });
+        return res.status(400).json({ message: "Spouse date of birth is required" });
       }
 
       if (hasChildren === true) {
@@ -202,6 +224,10 @@ app.get("/api/customers", async (req, res) => {
   }
 });
 
-app.listen(process.env.PORT || 5000, () => {
-  console.log(`Server running on port ${process.env.PORT || 5000}`);
-});
+module.exports = app;
+
+if (require.main === module) {
+  app.listen(process.env.PORT || 5000, () => {
+    console.log(`Server running on port ${process.env.PORT || 5000}`);
+  });
+}
